@@ -30,6 +30,7 @@ export async function analyze(req, res) {
 
     // Call Gemini for analysis
     const result = await analyzeCV({
+      cvBuffer: cvFile.buffer,
       cvPath,
       skills: skills || '',
       diplomas: diplomas || '',
@@ -50,7 +51,7 @@ export async function analyze(req, res) {
         JSON.stringify(result.cvWeaknesses),
         JSON.stringify(result.recommendations),
         JSON.stringify(result.interviewQuestions),
-        cvFile.filename,
+        cvFile.originalname || cvFile.filename || 'cv.pdf',
         skills || '',
         diplomas || '',
         jobDescription,

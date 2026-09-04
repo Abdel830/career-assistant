@@ -33,9 +33,11 @@ function safeParseJSON(rawText) {
 /**
  * Analyze a CV against a job offer using Gemini AI
  */
-export async function analyzeCV({ cvPath, skills, diplomas, jobDescription }) {
+export async function analyzeCV({ cvBuffer, cvPath, skills, diplomas, jobDescription }) {
   let pdfParts = [];
-  if (cvPath && fs.existsSync(cvPath)) {
+  if (cvBuffer && Buffer.isBuffer(cvBuffer)) {
+    pdfParts.push({ inlineData: { data: cvBuffer.toString('base64'), mimeType: 'application/pdf' } });
+  } else if (cvPath && fs.existsSync(cvPath)) {
     const pdfData = fs.readFileSync(cvPath).toString('base64');
     pdfParts.push({ inlineData: { data: pdfData, mimeType: 'application/pdf' } });
   }

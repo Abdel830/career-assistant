@@ -78,17 +78,29 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'AI Career Assistant API is running' });
 });
 
-// Start server
-async function start() {
-  try {
-    await initDatabase();
+// Initialize DB on cold start
+let dbInitialized = false;
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    try {
+      await initDatabase();
+      dbInitialized = true;
+    } catch (err) {
+      console.error('Database connection error on request:', err.message);
+    }
+  }
+  next();
+});
+
+// Start server locally (if not running in Vercel serverless environment)
+if (!process.env.VERCEL) {
+  initDatabase().then(() => {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
-  } catch (error) {
+  }).catch((error) => {
     console.error('Failed to start server:', error);
-    process.exit(1);
-  }
+  });
 }
 
-start();
+export default app;
