@@ -77,6 +77,16 @@ export async function analyze(req, res) {
   }
 }
 
+function parseJSONField(val) {
+  if (!val) return [];
+  if (typeof val === 'object') return val;
+  try {
+    return typeof val === 'string' ? JSON.parse(val) : val;
+  } catch (e) {
+    return [];
+  }
+}
+
 /**
  * GET /api/analysis/:id
  * Get analysis result by ID
@@ -94,10 +104,10 @@ export async function getAnalysis(req, res) {
       jobTitle: analysis.job_title,
       company: analysis.company,
       compatibilityScore: analysis.compatibility_score,
-      missingSkills: JSON.parse(analysis.missing_skills || '[]'),
-      cvWeaknesses: JSON.parse(analysis.weaknesses || '[]'),
-      recommendations: JSON.parse(analysis.recommendations || '[]'),
-      interviewQuestions: JSON.parse(analysis.interview_questions || '[]'),
+      missingSkills: parseJSONField(analysis.missing_skills),
+      cvWeaknesses: parseJSONField(analysis.weaknesses),
+      recommendations: parseJSONField(analysis.recommendations),
+      interviewQuestions: parseJSONField(analysis.interview_questions),
       coverLetter: analysis.cover_letter,
       strengths: [],
       summary: '',
@@ -105,7 +115,7 @@ export async function getAnalysis(req, res) {
     });
   } catch (error) {
     console.error('Get analysis error:', error);
-    res.status(500).json({ error: 'Failed to retrieve analysis' });
+    res.status(500).json({ error: error.message || 'Failed to retrieve analysis' });
   }
 }
 

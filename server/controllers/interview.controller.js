@@ -2,6 +2,16 @@ import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/db.js';
 import { generateInterviewMessage } from '../services/gemini.service.js';
 
+function parseJSONField(val, fallback = []) {
+  if (!val) return fallback;
+  if (typeof val === 'object') return val;
+  try {
+    return typeof val === 'string' ? JSON.parse(val) : val;
+  } catch (e) {
+    return fallback;
+  }
+}
+
 /**
  * POST /api/interview/start
  * Start a new interview session
@@ -25,7 +35,7 @@ export async function startInterview(req, res) {
       analysisResult: {
         compatibilityScore: analysis.compatibility_score,
         strengths: [],
-        cvWeaknesses: JSON.parse(analysis.weaknesses || '[]'),
+        cvWeaknesses: parseJSONField(analysis.weaknesses),
       },
       messages: [],
       isStart: true,
@@ -55,7 +65,7 @@ export async function startInterview(req, res) {
     });
   } catch (error) {
     console.error('Start interview error:', error);
-    res.status(500).json({ error: 'Failed to start interview' });
+    res.status(500).json({ error: error.message || 'Failed to start interview' });
   }
 }
 
@@ -75,7 +85,7 @@ export async function sendMessage(req, res) {
     }
 
     const interview = interviewRows[0];
-    const messages = JSON.parse(interview.messages || '[]');
+    const messages = parseJSONField(interview.messages);
 
     // Add candidate message
     messages.push({
@@ -94,7 +104,7 @@ export async function sendMessage(req, res) {
       analysisResult: {
         compatibilityScore: analysis.compatibility_score,
         strengths: [],
-        cvWeaknesses: JSON.parse(analysis.weaknesses || '[]'),
+        cvWeaknesses: parseJSONField(analysis.weaknesses),
       },
       messages,
       isStart: false,
@@ -129,7 +139,7 @@ export async function sendMessage(req, res) {
     });
   } catch (error) {
     console.error('Send message error:', error);
-    res.status(500).json({ error: 'Failed to process message' });
+    res.status(500).json({ error: error.message || 'Failed to process message' });
   }
 }
 
@@ -148,13 +158,13 @@ export async function getInterview(req, res) {
     res.json({
       id: interview.id,
       analysisId: interview.analysis_id,
-      messages: JSON.parse(interview.messages || '[]'),
-      feedback: interview.feedback ? JSON.parse(interview.feedback) : null,
+      messages: parseJSONField(interview.messages),
+      feedback: parseJSONField(interview.feedback, null),
       status: interview.status,
       createdAt: interview.created_at,
     });
   } catch (error) {
     console.error('Get interview error:', error);
-    res.status(500).json({ error: 'Failed to retrieve interview' });
+    res.status(500).json({ error: error.message || 'Failed to retrieve interview' });
   }
 }
