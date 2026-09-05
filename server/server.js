@@ -66,16 +66,12 @@ const interviewLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Static files for uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Routes
-app.use('/api/analysis', analysisLimiter, analysisRoutes);
-app.use('/api/interview', interviewLimiter, interviewRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'AI Career Assistant API is running' });
+// Vercel Serverless Route Normalizer
+app.use((req, res, next) => {
+  if (req.url === '/api/index.js' || req.url === '/api/index' || req.url === '/api' || req.url === '/api/') {
+    req.url = '/api/health';
+  }
+  next();
 });
 
 // Initialize DB on cold start
@@ -91,6 +87,18 @@ app.use(async (req, res, next) => {
   }
   next();
 });
+
+// Static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health check
+app.get(['/', '/api/health', '/health'], (req, res) => {
+  res.json({ status: 'ok', message: 'AI Career Assistant API is running' });
+});
+
+// Routes
+app.use('/api/analysis', analysisLimiter, analysisRoutes);
+app.use('/api/interview', interviewLimiter, interviewRoutes);
 
 // Start server locally (if not running in Vercel serverless environment)
 if (!process.env.VERCEL) {
