@@ -29,14 +29,14 @@ app.use(
 
 // CORS configuration
 const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
+  ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/+$/, ''))
   : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl) or if origin is allowed
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      const cleanOrigin = origin ? origin.replace(/\/+$/, '') : origin;
+      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(cleanOrigin)) {
         callback(null, true);
       } else {
         callback(new Error(`CORS policy does not allow access from ${origin}`));
