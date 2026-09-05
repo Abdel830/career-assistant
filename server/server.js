@@ -66,14 +66,6 @@ const interviewLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Vercel Serverless Route Normalizer
-app.use((req, res, next) => {
-  if (req.url === '/api/index.js' || req.url === '/api/index' || req.url === '/api' || req.url === '/api/') {
-    req.url = '/api/health';
-  }
-  next();
-});
-
 // Initialize DB on cold start
 let dbInitialized = false;
 app.use(async (req, res, next) => {
