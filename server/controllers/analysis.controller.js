@@ -64,7 +64,7 @@ export async function analyze(req, res) {
     });
   } catch (error) {
     console.error('Analysis error:', error);
-    res.status(500).json({ error: 'Failed to analyze CV. Please try again.' });
+    res.status(500).json({ error: error.message || 'Failed to analyze CV. Please try again.' });
   } finally {
     // Clean up temporary uploaded file from disk after processing
     if (cvPath && fs.existsSync(cvPath)) {
