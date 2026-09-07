@@ -14,7 +14,7 @@ export default function Analyze() {
   const [diplomas, setDiplomas] = useState('');
   
   // Job Offer state
-  const [jobMode, setJobMode] = useState('text'); // 'text' | 'pdf'
+  const [jobMode, setJobMode] = useState('pdf'); // 'pdf' | 'text' (default 'pdf')
   const [jobDescription, setJobDescription] = useState('');
   const [jobPdfFile, setJobPdfFile] = useState(null);
 
@@ -233,18 +233,6 @@ export default function Analyze() {
               <div className="flex items-center p-1 rounded-xl bg-surface-elevated border border-border">
                 <button
                   type="button"
-                  onClick={() => setJobMode('text')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    jobMode === 'text'
-                      ? 'bg-primary/20 text-primary-light border border-primary/30'
-                      : 'text-text-muted hover:text-text'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  Paste Text
-                </button>
-                <button
-                  type="button"
                   onClick={() => setJobMode('pdf')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     jobMode === 'pdf'
@@ -254,6 +242,18 @@ export default function Analyze() {
                 >
                   <Upload className="w-3.5 h-3.5" />
                   Upload PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJobMode('text')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    jobMode === 'text'
+                      ? 'bg-primary/20 text-primary-light border border-primary/30'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Paste Text
                 </button>
               </div>
             </div>
