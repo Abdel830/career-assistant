@@ -13,8 +13,10 @@ const __dirname = path.dirname(__filename);
  * Analyze CV against job description
  */
 export async function analyze(req, res) {
-  const cvFile = req.file;
+  const cvFile = req.files?.cv?.[0] || req.file;
+  const jobPdfFile = req.files?.jobPdf?.[0];
   const cvPath = cvFile?.path;
+  const jobPdfPath = jobPdfFile?.path;
 
   try {
     const { skills, diplomas, jobDescription, sessionId } = req.body;
@@ -22,8 +24,8 @@ export async function analyze(req, res) {
     if (!cvFile) {
       return res.status(400).json({ error: 'CV file (PDF) is required' });
     }
-    if (!jobDescription) {
-      return res.status(400).json({ error: 'Job description is required' });
+    if (!jobDescription?.trim() && !jobPdfFile) {
+      return res.status(400).json({ error: 'Please provide job offer text or upload a Job Offer PDF' });
     }
 
     const analysisId = uuidv4();
@@ -32,10 +34,16 @@ export async function analyze(req, res) {
     const result = await analyzeCV({
       cvBuffer: cvFile.buffer,
       cvPath,
+      jobPdfBuffer: jobPdfFile?.buffer,
+      jobPdfPath,
       skills: skills || '',
       diplomas: diplomas || '',
-      jobDescription,
+      jobDescription: jobDescription || '',
     });
+
+    const storedJobDescription = jobDescription?.trim()
+      ? jobDescription
+      : `Job Offer: ${result.jobTitle || 'Position'} ${result.company ? 'at ' + result.company : ''} (Uploaded as PDF)`;
 
     // Save to database
     await pool.query(
@@ -54,7 +62,7 @@ export async function analyze(req, res) {
         cvFile.originalname || cvFile.filename || 'cv.pdf',
         skills || '',
         diplomas || '',
-        jobDescription,
+        storedJobDescription,
       ]
     );
 

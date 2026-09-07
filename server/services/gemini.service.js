@@ -33,7 +33,7 @@ function safeParseJSON(rawText) {
 /**
  * Analyze a CV against a job offer using Gemini AI
  */
-export async function analyzeCV({ cvBuffer, cvPath, skills, diplomas, jobDescription }) {
+export async function analyzeCV({ cvBuffer, cvPath, jobPdfBuffer, jobPdfPath, skills, diplomas, jobDescription }) {
   let pdfParts = [];
   if (cvBuffer && Buffer.isBuffer(cvBuffer)) {
     pdfParts.push({ inlineData: { data: cvBuffer.toString('base64'), mimeType: 'application/pdf' } });
@@ -42,14 +42,24 @@ export async function analyzeCV({ cvBuffer, cvPath, skills, diplomas, jobDescrip
     pdfParts.push({ inlineData: { data: pdfData, mimeType: 'application/pdf' } });
   }
 
-  const prompt = `You are an expert career advisor and HR consultant. Analyze the candidate's CV against the job description provided.
+  if (jobPdfBuffer && Buffer.isBuffer(jobPdfBuffer)) {
+    pdfParts.push({ inlineData: { data: jobPdfBuffer.toString('base64'), mimeType: 'application/pdf' } });
+  } else if (jobPdfPath && fs.existsSync(jobPdfPath)) {
+    const pdfData = fs.readFileSync(jobPdfPath).toString('base64');
+    pdfParts.push({ inlineData: { data: pdfData, mimeType: 'application/pdf' } });
+  }
+
+  const jobContextPrompt = jobPdfBuffer || jobPdfPath
+    ? `JOB OFFER (Attached as PDF file): Please read the second PDF document for the complete job offer details, requirements, and responsibilities.`
+    : `JOB DESCRIPTION:\n${jobDescription}`;
+
+  const prompt = `You are an expert career advisor and HR consultant. Analyze the candidate's CV against the job offer provided.
 
 USER'S ADDITIONAL INFO:
 - Skills: ${skills}
 - Diplomas/Education: ${diplomas}
 
-JOB DESCRIPTION:
-${jobDescription}
+${jobContextPrompt}
 
 Respond ONLY with a valid JSON object with this exact structure:
 {

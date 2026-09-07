@@ -24,7 +24,7 @@ const upload = multer({
 });
 
 // Routes
-router.post('/analyze', upload.single('cv'), analyze);
+router.post('/analyze', upload.fields([{ name: 'cv', maxCount: 1 }, { name: 'jobPdf', maxCount: 1 }]), analyze);
 router.get('/history/:sessionId', getHistory);
 router.get('/:id', getAnalysis);
 router.post('/:id/cover-letter', createCoverLetter);

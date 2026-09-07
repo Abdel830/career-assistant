@@ -1,37 +1,67 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, X, Sparkles, GraduationCap, Wrench, Briefcase, ArrowRight, AlertCircle } from 'lucide-react';
+import { Upload, FileText, X, Sparkles, GraduationCap, Wrench, Briefcase, ArrowRight, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import { analyzeCV } from '../services/api';
 import LoadingOverlay from '../components/LoadingOverlay';
 
 export default function Analyze() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const jobPdfInputRef = useRef(null);
 
   const [cvFile, setCvFile] = useState(null);
   const [skills, setSkills] = useState('');
   const [diplomas, setDiplomas] = useState('');
+  
+  // Job Offer state
+  const [jobMode, setJobMode] = useState('text'); // 'text' | 'pdf'
   const [jobDescription, setJobDescription] = useState('');
-  const [dragOver, setDragOver] = useState(false);
+  const [jobPdfFile, setJobPdfFile] = useState(null);
+
+  const [cvDragOver, setCvDragOver] = useState(false);
+  const [jobPdfDragOver, setJobPdfDragOver] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleDrop = useCallback((e) => {
+  // CV PDF Drop
+  const handleCvDrop = useCallback((e) => {
     e.preventDefault();
-    setDragOver(false);
+    setCvDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type === 'application/pdf') {
       setCvFile(file);
       setError('');
     } else {
-      setError('Please upload a PDF file');
+      setError('Please upload your CV in PDF format');
     }
   }, []);
 
-  const handleFileSelect = (e) => {
+  const handleCvSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
       setCvFile(file);
+      setError('');
+    }
+  };
+
+  // Job PDF Drop
+  const handleJobPdfDrop = useCallback((e) => {
+    e.preventDefault();
+    setJobPdfDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      setJobPdfFile(file);
+      setError('');
+    } else {
+      setError('Please upload the job offer in PDF format');
+    }
+  }, []);
+
+  const handleJobPdfSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setJobPdfFile(file);
       setError('');
     }
   };
@@ -41,7 +71,13 @@ export default function Analyze() {
     setError('');
 
     if (!cvFile) return setError('Please upload your CV (PDF)');
-    if (!jobDescription.trim()) return setError('Please paste the job description');
+    
+    if (jobMode === 'text' && !jobDescription.trim()) {
+      return setError('Please paste the job description text or switch to PDF upload');
+    }
+    if (jobMode === 'pdf' && !jobPdfFile) {
+      return setError('Please upload the Job Offer PDF file or switch to text mode');
+    }
 
     setLoading(true);
     try {
@@ -49,7 +85,12 @@ export default function Analyze() {
       formData.append('cv', cvFile);
       formData.append('skills', skills);
       formData.append('diplomas', diplomas);
-      formData.append('jobDescription', jobDescription);
+
+      if (jobMode === 'text') {
+        formData.append('jobDescription', jobDescription);
+      } else if (jobPdfFile) {
+        formData.append('jobPdf', jobPdfFile);
+      }
 
       const result = await analyzeCV(formData);
       navigate(`/results/${result.id}`);
@@ -72,7 +113,7 @@ export default function Analyze() {
             Analyze Your <span className="bg-gradient-to-r from-primary-light to-secondary-light bg-clip-text text-transparent">Application</span>
           </h1>
           <p className="text-text-muted max-w-lg mx-auto">
-            Upload your CV, add your details, and paste the job offer to get an AI-powered analysis
+            Upload your CV, add your details, and provide the job offer (text or PDF) for an AI-powered analysis
           </p>
         </div>
 
@@ -93,22 +134,22 @@ export default function Analyze() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-text">Upload Your CV</h2>
-                <p className="text-sm text-text-muted">PDF format, max 10MB</p>
+                <p className="text-sm text-text-muted">PDF format, max 4.5MB</p>
               </div>
             </div>
 
             <div
-              className={`drop-zone rounded-xl p-8 text-center cursor-pointer transition-all ${dragOver ? 'dragover' : ''} ${cvFile ? 'has-file' : ''}`}
-              onDrop={handleDrop}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
+              className={`drop-zone rounded-xl p-8 text-center cursor-pointer transition-all ${cvDragOver ? 'dragover' : ''} ${cvFile ? 'has-file' : ''}`}
+              onDrop={handleCvDrop}
+              onDragOver={(e) => { e.preventDefault(); setCvDragOver(true); }}
+              onDragLeave={() => setCvDragOver(false)}
               onClick={() => fileInputRef.current?.click()}
             >
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf"
-                onChange={handleFileSelect}
+                onChange={handleCvSelect}
                 className="hidden"
               />
               {cvFile ? (
@@ -175,24 +216,96 @@ export default function Analyze() {
             </div>
           </div>
 
-          {/* Job Description */}
+          {/* Job Description / Job PDF */}
           <div className="glass rounded-2xl p-6 animate-fade-in-up stagger-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-warm to-primary flex items-center justify-center">
-                <Briefcase className="w-5 h-5 text-white" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-warm to-primary flex items-center justify-center">
+                  <Briefcase className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-text">Job Offer</h2>
+                  <p className="text-sm text-text-muted">Provide the job details for comparison</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-text">Job Description</h2>
-                <p className="text-sm text-text-muted">Paste the full job offer text</p>
+
+              {/* Mode Switcher Tabs */}
+              <div className="flex items-center p-1 rounded-xl bg-surface-elevated border border-border">
+                <button
+                  type="button"
+                  onClick={() => setJobMode('text')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    jobMode === 'text'
+                      ? 'bg-primary/20 text-primary-light border border-primary/30'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Paste Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJobMode('pdf')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    jobMode === 'pdf'
+                      ? 'bg-primary/20 text-primary-light border border-primary/30'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload PDF
+                </button>
               </div>
             </div>
-            <textarea
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the complete job description here... Include requirements, responsibilities, qualifications, etc."
-              className="w-full h-48 bg-surface-elevated border border-border rounded-xl p-4 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
-              required
-            />
+
+            {/* Text Mode */}
+            {jobMode === 'text' ? (
+              <textarea
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                placeholder="Paste the complete job description here... Include requirements, responsibilities, qualifications, etc."
+                className="w-full h-48 bg-surface-elevated border border-border rounded-xl p-4 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+              />
+            ) : (
+              /* PDF Mode */
+              <div
+                className={`drop-zone rounded-xl p-8 text-center cursor-pointer transition-all ${jobPdfDragOver ? 'dragover' : ''} ${jobPdfFile ? 'has-file' : ''}`}
+                onDrop={handleJobPdfDrop}
+                onDragOver={(e) => { e.preventDefault(); setJobPdfDragOver(true); }}
+                onDragLeave={() => setJobPdfDragOver(false)}
+                onClick={() => jobPdfInputRef.current?.click()}
+              >
+                <input
+                  ref={jobPdfInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleJobPdfSelect}
+                  className="hidden"
+                />
+                {jobPdfFile ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <FileSpreadsheet className="w-8 h-8 text-secondary-light" />
+                    <div className="text-left">
+                      <p className="font-medium text-text">{jobPdfFile.name}</p>
+                      <p className="text-sm text-text-muted">{(jobPdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setJobPdfFile(null); }}
+                      className="ml-4 p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-danger transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-10 h-10 text-text-dim mx-auto mb-3" />
+                    <p className="text-text-muted mb-1">Drag & drop the Job Offer PDF here</p>
+                    <p className="text-sm text-text-dim">or click to browse files</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}
