@@ -90,7 +90,7 @@ Respond ONLY with a valid JSON object with this exact structure:
 Be thorough, specific, and actionable. Provide at least 5 items for each array field, 3-4 structured phases for learningRoadmap, and 8-10 interview questions.`;
 
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: [
       {
         role: 'user',
@@ -141,7 +141,7 @@ Write a compelling cover letter in English that:
 Respond ONLY with the cover letter text (no JSON, no markdown formatting, no code blocks). Use proper paragraph formatting.`;
 
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: [
       {
         role: 'user',
@@ -219,7 +219,7 @@ ${questionNum <= 8 ? `{
   }
 
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
       responseMimeType: 'application/json',
