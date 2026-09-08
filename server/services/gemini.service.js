@@ -31,6 +31,28 @@ function safeParseJSON(rawText) {
 }
 
 /**
+ * Helper to call Gemini AI with automatic retry on 503 / 429 / transient high-demand errors
+ */
+async function generateContentWithRetry(options, retries = 3, delayMs = 1500) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await ai.models.generateContent(options);
+    } catch (error) {
+      const isTransient = error?.status === 503 || error?.status === 429 || error?.code === 503 || error?.code === 429 ||
+        (error?.message && (error.message.includes('503') || error.message.includes('high demand') || error.message.includes('UNAVAILABLE') || error.message.includes('Quota')));
+
+      if (isTransient && attempt < retries) {
+        console.warn(`⚠️ Gemini API High Demand/503 (Attempt ${attempt}/${retries}). Retrying in ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        delayMs *= 2; // Exponential backoff: 1.5s -> 3s -> 6s
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
+/**
  * Analyze a CV against a job offer using Gemini AI
  */
 export async function analyzeCV({ cvBuffer, cvPath, jobPdfBuffer, jobPdfPath, skills, diplomas, jobDescription }) {
@@ -89,7 +111,7 @@ Respond ONLY with a valid JSON object with this exact structure:
 
 Be thorough, specific, and actionable. Provide at least 5 items for each array field, 3-4 structured phases for learningRoadmap, and 8-10 interview questions.`;
 
-  const result = await ai.models.generateContent({
+  const result = await generateContentWithRetry({
     model: 'gemini-3.6-flash',
     contents: [
       {
@@ -140,7 +162,7 @@ Write a compelling cover letter in English that:
 
 Respond ONLY with the cover letter text (no JSON, no markdown formatting, no code blocks). Use proper paragraph formatting.`;
 
-  const result = await ai.models.generateContent({
+  const result = await generateContentWithRetry({
     model: 'gemini-3.6-flash',
     contents: [
       {
@@ -218,7 +240,7 @@ ${questionNum <= 8 ? `{
 }`}`;
   }
 
-  const result = await ai.models.generateContent({
+  const result = await generateContentWithRetry({
     model: 'gemini-3.6-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
