@@ -47,18 +47,19 @@ export async function analyze(req, res) {
 
     // Save to database
     await pool.query(
-      `INSERT INTO analyses (id, session_id, job_title, company, compatibility_score, missing_skills, weaknesses, recommendations, interview_questions, cv_filename, skills, diplomas, job_description)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO analyses (id, session_id, job_title, company, compatibility_score, missing_skills, weaknesses, recommendations, interview_questions, learning_roadmap, cv_filename, skills, diplomas, job_description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         analysisId,
         sessionId || uuidv4(),
         result.jobTitle || '',
         result.company || '',
         result.compatibilityScore,
-        JSON.stringify(result.missingSkills),
-        JSON.stringify(result.cvWeaknesses),
-        JSON.stringify(result.recommendations),
-        JSON.stringify(result.interviewQuestions),
+        JSON.stringify(result.missingSkills || []),
+        JSON.stringify(result.cvWeaknesses || []),
+        JSON.stringify(result.recommendations || []),
+        JSON.stringify(result.interviewQuestions || []),
+        JSON.stringify(result.learningRoadmap || []),
         cvFile.originalname || cvFile.filename || 'cv.pdf',
         skills || '',
         diplomas || '',
@@ -116,6 +117,7 @@ export async function getAnalysis(req, res) {
       cvWeaknesses: parseJSONField(analysis.weaknesses),
       recommendations: parseJSONField(analysis.recommendations),
       interviewQuestions: parseJSONField(analysis.interview_questions),
+      learningRoadmap: parseJSONField(analysis.learning_roadmap),
       coverLetter: analysis.cover_letter,
       strengths: [],
       summary: '',

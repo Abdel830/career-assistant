@@ -61,6 +61,7 @@ export async function initDatabase() {
         recommendations JSON,
         interview_questions JSON,
         cover_letter TEXT,
+        learning_roadmap JSON,
         cv_filename VARCHAR(255),
         skills TEXT,
         diplomas TEXT,
@@ -69,6 +70,13 @@ export async function initDatabase() {
         INDEX idx_session (session_id)
       )
     `);
+
+    // Ensure learning_roadmap column exists for existing tables
+    try {
+      await poolConn.query(`ALTER TABLE analyses ADD COLUMN learning_roadmap JSON AFTER cover_letter`);
+    } catch (e) {
+      // Ignore error if column already exists
+    }
 
     // Create interviews table
     await poolConn.query(`

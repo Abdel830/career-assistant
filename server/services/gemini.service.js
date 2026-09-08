@@ -73,13 +73,24 @@ Respond ONLY with a valid JSON object with this exact structure:
     {"question": "<question>", "category": "<Technical|Behavioral|Situational>", "tip": "<brief tip to answer>"}
   ],
   "strengths": ["<strength1>", "<strength2>", ...],
-  "summary": "<2-3 sentence overall assessment>"
+  "summary": "<2-3 sentence overall assessment>",
+  "learningRoadmap": [
+    {
+      "phase": 1,
+      "title": "<Phase title, e.g., Phase 1: Core Prerequisites>",
+      "duration": "<e.g., 2-3 weeks>",
+      "priority": "<High|Medium|Low>",
+      "technologies": ["<tech1>", "<tech2>"],
+      "description": "<Goal description>",
+      "actionItem": "<Practical hands-on project or task to master these skills>"
+    }
+  ]
 }
 
-Be thorough, specific, and actionable. Provide at least 5 items for each array field and 8-10 interview questions.`;
+Be thorough, specific, and actionable. Provide at least 5 items for each array field, 3-4 structured phases for learningRoadmap, and 8-10 interview questions.`;
 
   const result = await ai.models.generateContent({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-2.0-flash',
     contents: [
       {
         role: 'user',
@@ -130,7 +141,7 @@ Write a compelling cover letter in English that:
 Respond ONLY with the cover letter text (no JSON, no markdown formatting, no code blocks). Use proper paragraph formatting.`;
 
   const result = await ai.models.generateContent({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-2.0-flash',
     contents: [
       {
         role: 'user',
@@ -208,7 +219,7 @@ ${questionNum <= 8 ? `{
   }
 
   const result = await ai.models.generateContent({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-2.0-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
       responseMimeType: 'application/json',

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Target, AlertTriangle, TrendingUp, HelpCircle, FileText,
-  MessageSquare, ChevronRight, CheckCircle, XCircle, Lightbulb, ArrowLeft, Loader2
+  MessageSquare, ChevronRight, CheckCircle, XCircle, Lightbulb, ArrowLeft, Loader2,
+  Compass, CheckSquare, Square, Clock, Sparkles, BookOpen
 } from 'lucide-react';
 import { getAnalysis } from '../services/api';
 import ScoreCircle from '../components/ScoreCircle';
@@ -13,6 +14,7 @@ export default function Results() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [completedPhases, setCompletedPhases] = useState({});
 
   useEffect(() => {
     async function fetchData() {
@@ -27,6 +29,13 @@ export default function Results() {
     }
     fetchData();
   }, [id]);
+
+  const togglePhase = (index) => {
+    setCompletedPhases(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
 
   if (loading) {
     return (
@@ -51,11 +60,27 @@ export default function Results() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Target },
+    { id: 'roadmap', label: 'Feuille de Route AI', icon: Compass },
     { id: 'skills', label: 'Missing Skills', icon: AlertTriangle },
     { id: 'weaknesses', label: 'Weaknesses', icon: XCircle },
     { id: 'recommendations', label: 'Tips', icon: Lightbulb },
     { id: 'questions', label: 'Interview Q&A', icon: HelpCircle },
   ];
+
+  const roadmapList = data.learningRoadmap && data.learningRoadmap.length > 0
+    ? data.learningRoadmap
+    : (data.missingSkills || []).map((skill, idx) => ({
+        phase: idx + 1,
+        title: `Phase ${idx + 1}: ${skill}`,
+        duration: '1-2 semaines',
+        priority: idx === 0 ? 'High' : 'Medium',
+        technologies: [skill],
+        description: `Acquérir et consolider les compétences pratiques en ${skill} pour combler l'écart avec l'offre.`,
+        actionItem: `Réaliser un mini-projet pratique intégrant ${skill}.`
+      }));
+
+  const completedCount = Object.values(completedPhases).filter(Boolean).length;
+  const progressPercent = roadmapList.length > 0 ? Math.round((completedCount / roadmapList.length) * 100) : 0;
 
   return (
     <div className="bg-gradient-mesh min-h-screen pt-24 pb-12 px-4">
@@ -102,7 +127,7 @@ export default function Results() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'bg-primary/15 text-primary-light border border-primary/30'
+                  ? 'bg-primary/15 text-primary-light border border-primary/30 shadow-lg shadow-primary/10'
                   : 'text-text-muted hover:text-text hover:bg-surface-elevated border border-transparent'
               }`}
             >
@@ -116,6 +141,12 @@ export default function Results() {
         <div className="animate-fade-in">
           {activeTab === 'overview' && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                icon={Compass}
+                label="Feuille de Route"
+                value={`${roadmapList.length} ÉTAPES`}
+                color="primary"
+              />
               <StatCard
                 icon={AlertTriangle}
                 label="Missing Skills"
@@ -134,12 +165,6 @@ export default function Results() {
                 value={data.recommendations?.length || 0}
                 color="accent"
               />
-              <StatCard
-                icon={HelpCircle}
-                label="Interview Questions"
-                value={data.interviewQuestions?.length || 0}
-                color="secondary"
-              />
 
               {data.strengths?.length > 0 && (
                 <div className="sm:col-span-2 lg:col-span-4 glass rounded-2xl p-6">
@@ -157,6 +182,124 @@ export default function Results() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'roadmap' && (
+            <div className="glass rounded-2xl p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                <div>
+                  <h3 className="text-xl font-bold text-text flex items-center gap-2">
+                    <Compass className="w-6 h-6 text-primary" />
+                    Feuille de Route d'Apprentissage Sur-Mesure
+                  </h3>
+                  <p className="text-sm text-text-muted mt-1">
+                    Plan personnalisé généré par l'IA pour acquérir les compétences prioritaires du poste cible.
+                  </p>
+                </div>
+                <div className="bg-surface-elevated border border-border px-4 py-2 rounded-xl flex items-center gap-3 shrink-0">
+                  <span className="text-xs text-text-muted font-medium">Progression :</span>
+                  <span className="text-sm font-bold text-primary">{progressPercent}%</span>
+                  <div className="w-24 bg-surface rounded-full h-2 overflow-hidden border border-border">
+                    <div
+                      className="bg-primary h-full transition-all duration-300 rounded-full"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative pl-6 sm:pl-8 space-y-8 before:absolute before:left-3 sm:before:left-4 before:top-3 before:bottom-3 before:w-0.5 before:bg-gradient-to-b before:from-primary before:via-secondary before:to-surface-elevated">
+                {roadmapList.map((item, idx) => {
+                  const isDone = !!completedPhases[idx];
+                  const priorityColors = {
+                    High: 'bg-danger/15 text-danger border-danger/30',
+                    Medium: 'bg-warning/15 text-warning border-warning/30',
+                    Low: 'bg-success/15 text-success border-success/30',
+                  };
+
+                  return (
+                    <div key={idx} className="relative group">
+                      {/* Timeline dot */}
+                      <button
+                        onClick={() => togglePhase(idx)}
+                        className={`absolute -left-[calc(1.5rem+9px)] sm:-left-[calc(2rem+9px)] top-1 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                          isDone
+                            ? 'bg-success text-surface shadow-lg shadow-success/30'
+                            : 'bg-surface-elevated border-2 border-primary text-primary group-hover:scale-110'
+                        }`}
+                      >
+                        {isDone ? <CheckCircle className="w-4 h-4 fill-current text-white" /> : <span className="text-xs font-bold">{idx + 1}</span>}
+                      </button>
+
+                      <div className={`p-5 rounded-2xl transition-all border ${
+                        isDone
+                          ? 'bg-success/5 border-success/20 opacity-80'
+                          : 'bg-surface-elevated border-border hover:border-primary/40 shadow-lg shadow-black/5'
+                      }`}>
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => togglePhase(idx)}
+                              className="text-text-muted hover:text-primary transition-colors"
+                            >
+                              {isDone ? (
+                                <CheckSquare className="w-5 h-5 text-success" />
+                              ) : (
+                                <Square className="w-5 h-5 text-text-muted" />
+                              )}
+                            </button>
+                            <h4 className={`text-base font-bold ${isDone ? 'line-through text-text-muted' : 'text-text'}`}>
+                              {item.title || `Phase ${item.phase || idx + 1}`}
+                            </h4>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {item.duration && (
+                              <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-surface border border-border text-text-muted">
+                                <Clock className="w-3.5 h-3.5" />
+                                {item.duration}
+                              </span>
+                            )}
+                            {item.priority && (
+                              <span className={`text-xs px-2.5 py-1 rounded-lg border font-medium ${priorityColors[item.priority] || priorityColors.Medium}`}>
+                                Priority: {item.priority}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-text-muted leading-relaxed mb-4">
+                          {item.description}
+                        </p>
+
+                        {/* Tech tags */}
+                        {item.technologies && item.technologies.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2 mb-4">
+                            <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Technos :</span>
+                            {item.technologies.map((tech, tIdx) => (
+                              <span key={tIdx} className="text-xs px-2.5 py-1 rounded-md bg-primary/10 text-primary-light border border-primary/20 font-mono">
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action project item */}
+                        {item.actionItem && (
+                          <div className="p-3 rounded-xl bg-accent/5 border border-accent/15 flex items-start gap-2.5 text-xs text-text">
+                            <Sparkles className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                            <div>
+                              <strong className="text-accent font-semibold">Projet Pratique Recommandé : </strong>
+                              {item.actionItem}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -259,6 +402,7 @@ export default function Results() {
 
 function StatCard({ icon: Icon, label, value, color }) {
   const colors = {
+    primary: 'from-primary/20 to-primary/5 border-primary/20 text-primary-light',
     warning: 'from-warning/20 to-warning/5 border-warning/20 text-warning',
     danger: 'from-danger/20 to-danger/5 border-danger/20 text-danger',
     accent: 'from-accent/20 to-accent/5 border-accent/20 text-accent',
@@ -268,7 +412,7 @@ function StatCard({ icon: Icon, label, value, color }) {
   return (
     <div className={`rounded-2xl p-5 bg-gradient-to-br ${colors[color]} border`}>
       <Icon className="w-6 h-6 mb-3" />
-      <div className="text-3xl font-bold text-text mb-1">{value}</div>
+      <div className="text-2xl font-bold text-text mb-1">{value}</div>
       <div className="text-sm text-text-muted">{label}</div>
     </div>
   );
