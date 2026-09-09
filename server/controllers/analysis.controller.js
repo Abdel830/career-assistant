@@ -19,7 +19,7 @@ export async function analyze(req, res) {
   const jobPdfPath = jobPdfFile?.path;
 
   try {
-    const { skills, diplomas, jobDescription, sessionId } = req.body;
+    const { skills, diplomas, jobDescription, sessionId, language = 'fr' } = req.body;
 
     if (!cvFile) {
       return res.status(400).json({ error: 'CV file (PDF) is required' });
@@ -39,6 +39,7 @@ export async function analyze(req, res) {
       skills: skills || '',
       diplomas: diplomas || '',
       jobDescription: jobDescription || '',
+      language,
     });
 
     const storedJobDescription = jobDescription?.trim()
@@ -47,8 +48,8 @@ export async function analyze(req, res) {
 
     // Save to database
     await pool.query(
-      `INSERT INTO analyses (id, session_id, job_title, company, compatibility_score, missing_skills, weaknesses, recommendations, interview_questions, learning_roadmap, cv_filename, skills, diplomas, job_description)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO analyses (id, session_id, job_title, company, compatibility_score, missing_skills, weaknesses, recommendations, interview_questions, learning_roadmap, cv_filename, skills, diplomas, job_description, language)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         analysisId,
         sessionId || uuidv4(),
@@ -64,11 +65,13 @@ export async function analyze(req, res) {
         skills || '',
         diplomas || '',
         storedJobDescription,
+        language || 'fr',
       ]
     );
 
     res.json({
       id: analysisId,
+      language: language || 'fr',
       ...result,
     });
   } catch (error) {
@@ -119,6 +122,7 @@ export async function getAnalysis(req, res) {
       interviewQuestions: parseJSONField(analysis.interview_questions),
       learningRoadmap: parseJSONField(analysis.learning_roadmap),
       coverLetter: analysis.cover_letter,
+      language: analysis.language || 'fr',
       strengths: [],
       summary: '',
       createdAt: analysis.created_at,
@@ -178,6 +182,7 @@ export async function createCoverLetter(req, res) {
         compatibilityScore: analysis.compatibility_score,
         strengths: [],
       },
+      language: analysis.language || 'fr',
     });
 
     // Save cover letter

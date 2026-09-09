@@ -66,14 +66,21 @@ export async function initDatabase() {
         skills TEXT,
         diplomas TEXT,
         job_description TEXT,
+        language VARCHAR(10) DEFAULT 'fr',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_session (session_id)
       )
     `);
 
-    // Ensure learning_roadmap column exists for existing tables
+    // Ensure learning_roadmap and language columns exist for existing tables
     try {
       await poolConn.query(`ALTER TABLE analyses ADD COLUMN learning_roadmap JSON AFTER cover_letter`);
+    } catch (e) {
+      // Ignore error if column already exists
+    }
+
+    try {
+      await poolConn.query(`ALTER TABLE analyses ADD COLUMN language VARCHAR(10) DEFAULT 'fr' AFTER job_description`);
     } catch (e) {
       // Ignore error if column already exists
     }

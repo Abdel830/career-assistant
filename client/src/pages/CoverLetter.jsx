@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FileText, Download, Copy, Check, ArrowLeft, Loader2, RefreshCw, Edit3 } from 'lucide-react';
 import { getAnalysis, generateCoverLetter } from '../services/api';
+import { useLanguage } from '../LanguageContext';
 
 export default function CoverLetter() {
   const { id } = useParams();
+  const { t } = useLanguage();
   const [coverLetter, setCoverLetter] = useState('');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -74,8 +76,8 @@ export default function CoverLetter() {
               <FileText className="w-8 h-8 text-primary-light" />
             </div>
           </div>
-          <h3 className="text-xl font-bold text-text mb-2">Crafting Your Cover Letter</h3>
-          <p className="text-text-muted text-sm">AI is writing a personalized letter for you...</p>
+          <h3 className="text-xl font-bold text-text mb-2">{t('craftingCoverLetter')}</h3>
+          <p className="text-text-muted text-sm">{t('aiWritingLetter')}</p>
           <div className="flex justify-center gap-2 mt-4">
             <div className="typing-dot" />
             <div className="typing-dot" />
@@ -91,8 +93,8 @@ export default function CoverLetter() {
       <div className="max-w-4xl mx-auto">
         {/* Back */}
         <Link to={`/results/${id}`} className="inline-flex items-center gap-2 text-text-muted hover:text-text mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Back to Results</span>
+          <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+          <span className="text-sm">{t('backToResults')}</span>
         </Link>
 
         {/* Header */}
@@ -103,12 +105,12 @@ export default function CoverLetter() {
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-text">Cover Letter</h1>
+                <h1 className="text-xl font-bold text-text">{t('coverLetterTitle')}</h1>
                 <p className="text-sm text-text-muted">{analysis?.jobTitle} {analysis?.company ? `at ${analysis.company}` : ''}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setEditing(!editing)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -116,19 +118,19 @@ export default function CoverLetter() {
                 }`}
               >
                 <Edit3 className="w-4 h-4" />
-                {editing ? 'Preview' : 'Edit'}
+                {editing ? t('previewBtn') : t('editBtn')}
               </button>
               <button onClick={handleGenerate} className="btn-secondary flex items-center gap-2 text-sm" disabled={generating}>
                 <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
-                Regenerate
+                {t('regenerateBtn')}
               </button>
               <button onClick={handleCopy} className="btn-secondary flex items-center gap-2 text-sm">
                 {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? t('copiedBtn') : t('copyBtn')}
               </button>
               <button onClick={handleDownload} className="btn-primary flex items-center gap-2 text-sm">
                 <Download className="w-4 h-4 relative z-10" />
-                <span>Download</span>
+                <span>{t('downloadBtn')}</span>
               </button>
             </div>
           </div>

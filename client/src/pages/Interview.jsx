@@ -5,9 +5,11 @@ import {
   Trophy, Target, TrendingUp, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import { getAnalysis, startInterview, sendInterviewMessage } from '../services/api';
+import { useLanguage } from '../LanguageContext';
 
 export default function Interview() {
   const { id: analysisId } = useParams();
+  const { t } = useLanguage();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -93,8 +95,8 @@ export default function Interview() {
               <MessageSquare className="w-8 h-8 text-secondary-light" />
             </div>
           </div>
-          <h3 className="text-xl font-bold text-text mb-2">Preparing Your Interview</h3>
-          <p className="text-text-muted text-sm">The AI recruiter is reviewing your profile...</p>
+          <h3 className="text-xl font-bold text-text mb-2">{t('preparingInterview')}</h3>
+          <p className="text-text-muted text-sm">{t('aiReviewingProfile')}</p>
         </div>
       </div>
     );
@@ -107,16 +109,16 @@ export default function Interview() {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to={`/results/${analysisId}`} className="p-2 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-text transition-all">
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 rtl:rotate-180" />
             </Link>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center">
                 <Bot className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-text">AI Recruiter</h2>
+                <h2 className="text-sm font-bold text-text">{t('aiRecruiter')}</h2>
                 <p className="text-xs text-text-muted">
-                  {isComplete ? 'Interview Complete' : 'Mock Interview Session'}
+                  {isComplete ? t('interviewCompleteHeader') : t('mockSession')}
                 </p>
               </div>
             </div>
@@ -204,8 +206,8 @@ export default function Interview() {
               <div className="flex items-center gap-3 mb-6">
                 <Trophy className="w-8 h-8 text-accent-warm" />
                 <div>
-                  <h3 className="text-xl font-bold text-text">Interview Complete!</h3>
-                  <p className="text-sm text-text-muted">Here's your performance review</p>
+                  <h3 className="text-xl font-bold text-text">{t('interviewCompleteHeader')}</h3>
+                  <p className="text-sm text-text-muted">{t('mockSession')}</p>
                 </div>
               </div>
 
@@ -215,7 +217,7 @@ export default function Interview() {
                   <div className="text-5xl font-bold bg-gradient-to-r from-primary-light to-accent bg-clip-text text-transparent">
                     {finalFeedback.overallScore}%
                   </div>
-                  <p className="text-text-muted mt-1">Overall Performance</p>
+                  <p className="text-text-muted mt-1">{t('overallPerformance')}</p>
                   <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${
                     finalFeedback.recommendation === 'hire'
                       ? 'bg-success/15 text-success'
@@ -223,9 +225,9 @@ export default function Interview() {
                       ? 'bg-warning/15 text-warning'
                       : 'bg-danger/15 text-danger'
                   }`}>
-                    {finalFeedback.recommendation === 'hire' ? '✅ Recommended to Hire' :
-                     finalFeedback.recommendation === 'consider' ? '🤔 Worth Considering' :
-                     '⚠️ Needs Improvement'}
+                    {finalFeedback.recommendation === 'hire' ? t('recommendedHire') :
+                     finalFeedback.recommendation === 'consider' ? t('worthConsidering') :
+                     t('needsImprovement')}
                   </span>
                 </div>
               </div>
@@ -235,7 +237,7 @@ export default function Interview() {
                 <div className="p-4 rounded-xl bg-success/5 border border-success/15">
                   <h4 className="font-bold text-text flex items-center gap-2 mb-3">
                     <CheckCircle className="w-4 h-4 text-success" />
-                    Strengths
+                    {t('yourStrengths')}
                   </h4>
                   <ul className="space-y-2">
                     {finalFeedback.strengths?.map((s, i) => (
@@ -250,7 +252,7 @@ export default function Interview() {
                 <div className="p-4 rounded-xl bg-warning/5 border border-warning/15">
                   <h4 className="font-bold text-text flex items-center gap-2 mb-3">
                     <TrendingUp className="w-4 h-4 text-warning" />
-                    Areas to Improve
+                    {t('areasToImprove')}
                   </h4>
                   <ul className="space-y-2">
                     {finalFeedback.improvements?.map((s, i) => (
@@ -283,7 +285,7 @@ export default function Interview() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your answer..."
+              placeholder={t('typeAnswerPlaceholder')}
               rows={1}
               className="flex-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all max-h-32"
               style={{ minHeight: '48px' }}
@@ -297,7 +299,7 @@ export default function Interview() {
               {sending ? (
                 <Loader2 className="w-5 h-5 animate-spin relative z-10" />
               ) : (
-                <Send className="w-5 h-5 relative z-10" />
+                <Send className="w-5 h-5 relative z-10 rtl:rotate-180" />
               )}
             </button>
           </div>

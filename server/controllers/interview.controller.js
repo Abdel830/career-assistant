@@ -39,6 +39,7 @@ export async function startInterview(req, res) {
       },
       messages: [],
       isStart: true,
+      language: analysis.language || 'fr',
     });
 
     const messages = [
@@ -108,6 +109,7 @@ export async function sendMessage(req, res) {
       },
       messages,
       isStart: false,
+      language: analysis?.language || 'fr',
     });
 
     // Add interviewer message

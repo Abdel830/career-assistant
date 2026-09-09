@@ -55,7 +55,7 @@ async function generateContentWithRetry(options, retries = 3, delayMs = 1500) {
 /**
  * Analyze a CV against a job offer using Gemini AI
  */
-export async function analyzeCV({ cvBuffer, cvPath, jobPdfBuffer, jobPdfPath, skills, diplomas, jobDescription }) {
+export async function analyzeCV({ cvBuffer, cvPath, jobPdfBuffer, jobPdfPath, skills, diplomas, jobDescription, language = 'fr' }) {
   let pdfParts = [];
   if (cvBuffer && Buffer.isBuffer(cvBuffer)) {
     pdfParts.push({ inlineData: { data: cvBuffer.toString('base64'), mimeType: 'application/pdf' } });
@@ -75,7 +75,15 @@ export async function analyzeCV({ cvBuffer, cvPath, jobPdfBuffer, jobPdfPath, sk
     ? `JOB OFFER (Attached as PDF file): Please read the second PDF document for the complete job offer details, requirements, and responsibilities.`
     : `JOB DESCRIPTION:\n${jobDescription}`;
 
+  const langInstruction = {
+    fr: 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL JSON string values (jobTitle, company, missingSkills, cvWeaknesses, recommendations, interviewQuestions (question & tip), strengths, summary, learningRoadmap (title, description, actionItem)) strictly in FRENCH (Français). The JSON key names must remain in English.',
+    ar: 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL JSON string values (jobTitle, company, missingSkills, cvWeaknesses, recommendations, interviewQuestions (question & tip), strengths, summary, learningRoadmap (title, description, actionItem)) strictly in ARABIC (العربية). The JSON key names must remain in English.',
+    en: 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL JSON string values strictly in ENGLISH. The JSON key names must remain in English.',
+  }[language] || 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL JSON string values strictly in FRENCH (Français). The JSON key names must remain in English.';
+
   const prompt = `You are an expert career advisor and HR consultant. Analyze the candidate's CV against the job offer provided.
+
+${langInstruction}
 
 USER'S ADDITIONAL INFO:
 - Skills: ${skills}
@@ -133,14 +141,22 @@ Be thorough, specific, and actionable. Provide at least 5 items for each array f
 /**
  * Generate a personalized cover letter
  */
-export async function generateCoverLetter({ cvPath, skills, diplomas, jobDescription, analysisResult }) {
+export async function generateCoverLetter({ cvPath, skills, diplomas, jobDescription, analysisResult, language = 'fr' }) {
   let pdfParts = [];
   if (cvPath && fs.existsSync(cvPath)) {
     const pdfData = fs.readFileSync(cvPath).toString('base64');
     pdfParts.push({ inlineData: { data: pdfData, mimeType: 'application/pdf' } });
   }
 
+  const langInstruction = {
+    fr: 'Write the complete cover letter strictly in FRENCH (Français).',
+    ar: 'Write the complete cover letter strictly in ARABIC (العربية).',
+    en: 'Write the complete cover letter strictly in ENGLISH.',
+  }[language] || 'Write the complete cover letter strictly in FRENCH (Français).';
+
   const prompt = `You are an expert career advisor. Based on the candidate's CV and the job description, write a professional, personalized cover letter.
+
+${langInstruction}
 
 USER'S INFO:
 - Skills: ${skills}
@@ -153,7 +169,7 @@ ANALYSIS SUMMARY:
 - Compatibility Score: ${analysisResult?.compatibilityScore || 'N/A'}%
 - Strengths: ${JSON.stringify(analysisResult?.strengths || [])}
 
-Write a compelling cover letter in English that:
+Write a compelling cover letter that:
 1. Addresses the specific job requirements
 2. Highlights the candidate's relevant strengths
 3. Addresses potential gaps constructively
@@ -181,11 +197,19 @@ Respond ONLY with the cover letter text (no JSON, no markdown formatting, no cod
 /**
  * Generate interview response (chat mode)
  */
-export async function generateInterviewMessage({ jobDescription, analysisResult, messages, isStart }) {
+export async function generateInterviewMessage({ jobDescription, analysisResult, messages, isStart, language = 'fr' }) {
   let prompt;
+
+  const langInstruction = {
+    fr: 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL message content, question strings, and feedback strictly in FRENCH (Français). JSON field keys must stay in English.',
+    ar: 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL message content, question strings, and feedback strictly in ARABIC (العربية). JSON field keys must stay in English.',
+    en: 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL message content, question strings, and feedback strictly in ENGLISH. JSON field keys must stay in English.',
+  }[language] || 'IMPORTANT LANGUAGE REQUIREMENT: Write ALL message content, question strings, and feedback strictly in FRENCH (Français). JSON field keys must stay in English.';
 
   if (isStart) {
     prompt = `You are a professional recruiter conducting a job interview. The candidate is applying for this position:
+
+${langInstruction}
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -195,10 +219,10 @@ CANDIDATE ANALYSIS:
 - Strengths: ${JSON.stringify(analysisResult?.strengths || [])}
 - Weaknesses: ${JSON.stringify(analysisResult?.cvWeaknesses || [])}
 
-Start the interview with a warm greeting and your first question. Be professional but friendly.
+Start the interview with a warm greeting and your first question in the target language. Be professional but friendly.
 Respond ONLY with a JSON object:
 {
-  "message": "<your greeting and first question>",
+  "message": "<your greeting and first question in the target language>",
   "questionNumber": 1,
   "totalQuestions": 8,
   "category": "Introduction"
@@ -208,6 +232,8 @@ Respond ONLY with a JSON object:
     const questionNum = messages.filter(m => m.role === 'interviewer').length + 1;
 
     prompt = `You are a professional recruiter conducting a job interview for this position:
+
+${langInstruction}
 
 JOB DESCRIPTION:
 ${jobDescription}

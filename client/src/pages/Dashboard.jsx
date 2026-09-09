@@ -5,8 +5,10 @@ import {
   Sparkles, Loader2, Inbox
 } from 'lucide-react';
 import { getHistory } from '../services/api';
+import { useLanguage } from '../LanguageContext';
 
 export default function Dashboard() {
+  const { t } = useLanguage();
   const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,13 +56,13 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold text-text flex items-center gap-3">
               <LayoutDashboard className="w-8 h-8 text-primary" />
-              Dashboard
+              {t('dashboardTitle')}
             </h1>
-            <p className="text-text-muted mt-1">Your analysis history</p>
+            <p className="text-text-muted mt-1">{t('dashboardSub')}</p>
           </div>
           <Link to="/analyze" className="btn-primary flex items-center gap-2">
             <Sparkles className="w-4 h-4 relative z-10" />
-            <span>New Analysis</span>
+            <span>{t('newAnalysisBtn')}</span>
           </Link>
         </div>
 
@@ -68,13 +70,13 @@ export default function Dashboard() {
           /* Empty State */
           <div className="glass rounded-2xl p-16 text-center animate-fade-in-up">
             <Inbox className="w-16 h-16 text-text-dim mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-text mb-3">No analyses yet</h2>
+            <h2 className="text-2xl font-bold text-text mb-3">{t('noAnalysesYet')}</h2>
             <p className="text-text-muted mb-8 max-w-md mx-auto">
-              Start by uploading your CV and a job description to get AI-powered insights about your application.
+              {t('noAnalysesDesc')}
             </p>
             <Link to="/analyze" className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-2 group">
               <Sparkles className="w-5 h-5 relative z-10" />
-              <span>Start Your First Analysis</span>
+              <span>{t('startFirstAnalysis')}</span>
             </Link>
           </div>
         ) : (
@@ -96,7 +98,7 @@ export default function Dashboard() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold text-text group-hover:text-primary-light transition-colors truncate">
-                    {analysis.jobTitle || 'Untitled Analysis'}
+                    {analysis.jobTitle || t('untitledAnalysis')}
                   </h3>
                   <div className="flex items-center gap-4 mt-1">
                     {analysis.company && (
@@ -107,17 +109,13 @@ export default function Dashboard() {
                     )}
                     <span className="text-sm text-text-dim flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5" />
-                      {new Date(analysis.createdAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      {new Date(analysis.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
 
                 {/* Arrow */}
-                <ChevronRight className="w-5 h-5 text-text-dim group-hover:text-primary-light group-hover:translate-x-1 transition-all shrink-0" />
+                <ChevronRight className="w-5 h-5 text-text-dim group-hover:text-primary-light group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180 transition-all shrink-0" />
               </Link>
             ))}
           </div>

@@ -1,14 +1,17 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, X, Sparkles, GraduationCap, Wrench, Briefcase, ArrowRight, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { Upload, FileText, X, Sparkles, GraduationCap, Wrench, Briefcase, ArrowRight, AlertCircle, FileSpreadsheet, Globe } from 'lucide-react';
 import { analyzeCV } from '../services/api';
+import { useLanguage } from '../LanguageContext';
 import LoadingOverlay from '../components/LoadingOverlay';
 
 export default function Analyze() {
   const navigate = useNavigate();
+  const { language: currentLang, t, languages } = useLanguage();
   const fileInputRef = useRef(null);
   const jobPdfInputRef = useRef(null);
 
+  const [targetLang, setTargetLang] = useState(currentLang);
   const [cvFile, setCvFile] = useState(null);
   const [skills, setSkills] = useState('');
   const [diplomas, setDiplomas] = useState('');
@@ -33,9 +36,9 @@ export default function Analyze() {
       setCvFile(file);
       setError('');
     } else {
-      setError('Please upload your CV in PDF format');
+      setError(t('uploadCvSub'));
     }
-  }, []);
+  }, [t]);
 
   const handleCvSelect = (e) => {
     const file = e.target.files[0];
@@ -54,9 +57,9 @@ export default function Analyze() {
       setJobPdfFile(file);
       setError('');
     } else {
-      setError('Please upload the job offer in PDF format');
+      setError(t('uploadCvSub'));
     }
-  }, []);
+  }, [t]);
 
   const handleJobPdfSelect = (e) => {
     const file = e.target.files[0];
@@ -70,13 +73,13 @@ export default function Analyze() {
     e.preventDefault();
     setError('');
 
-    if (!cvFile) return setError('Please upload your CV (PDF)');
+    if (!cvFile) return setError(t('uploadCvTitle'));
     
     if (jobMode === 'text' && !jobDescription.trim()) {
-      return setError('Please paste the job description text or switch to PDF upload');
+      return setError(t('jobDescriptionPlaceholder'));
     }
     if (jobMode === 'pdf' && !jobPdfFile) {
-      return setError('Please upload the Job Offer PDF file or switch to text mode');
+      return setError(t('dragDropJobPdf'));
     }
 
     setLoading(true);
@@ -85,6 +88,7 @@ export default function Analyze() {
       formData.append('cv', cvFile);
       formData.append('skills', skills);
       formData.append('diplomas', diplomas);
+      formData.append('language', targetLang);
 
       if (jobMode === 'text') {
         formData.append('jobDescription', jobDescription);
@@ -101,7 +105,7 @@ export default function Analyze() {
   };
 
   if (loading) {
-    return <LoadingOverlay message="Analyzing your profile..." submessage="Our AI is comparing your CV with the job offer" />;
+    return <LoadingOverlay message={t('analyzingOverlayTitle')} submessage={t('analyzingOverlaySub')} />;
   }
 
   return (
@@ -110,10 +114,10 @@ export default function Analyze() {
         {/* Header */}
         <div className="text-center mb-10 animate-fade-in-up">
           <h1 className="text-3xl sm:text-4xl font-bold text-text mb-3">
-            Analyze Your <span className="bg-gradient-to-r from-primary-light to-secondary-light bg-clip-text text-transparent">Application</span>
+            {t('analyzePageTitle')}<span className="bg-gradient-to-r from-primary-light to-secondary-light bg-clip-text text-transparent">{t('applicationHighlight')}</span>
           </h1>
           <p className="text-text-muted max-w-lg mx-auto">
-            Upload your CV, add your details, and provide the job offer (text or PDF) for an AI-powered analysis
+            {t('analyzePageDesc')}
           </p>
         </div>
 
@@ -126,6 +130,37 @@ export default function Analyze() {
             </div>
           )}
 
+          {/* AI Language Selection Card */}
+          <div className="glass rounded-2xl p-6 animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Globe className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-text">{t('targetLanguageLabel')}</h2>
+                <p className="text-sm text-text-muted">{t('targetLanguageDesc')}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {Object.entries(languages).map(([code, lang]) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setTargetLang(code)}
+                  className={`p-3.5 rounded-xl border flex flex-col sm:flex-row items-center justify-center gap-2 transition-all font-medium text-sm ${
+                    targetLang === code
+                      ? 'bg-primary/15 border-primary/40 text-primary-light shadow-lg shadow-primary/10'
+                      : 'bg-surface-elevated border-border text-text-muted hover:text-text hover:bg-surface'
+                  }`}
+                >
+                  <span className="text-xl">{lang.flag}</span>
+                  <span>{lang.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* CV Upload */}
           <div className="glass rounded-2xl p-6 animate-fade-in-up stagger-1">
             <div className="flex items-center gap-3 mb-4">
@@ -133,8 +168,8 @@ export default function Analyze() {
                 <Upload className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-text">Upload Your CV</h2>
-                <p className="text-sm text-text-muted">PDF format, max 4.5MB</p>
+                <h2 className="text-lg font-bold text-text">{t('uploadCvTitle')}</h2>
+                <p className="text-sm text-text-muted">{t('uploadCvSub')}</p>
               </div>
             </div>
 
@@ -155,14 +190,14 @@ export default function Analyze() {
               {cvFile ? (
                 <div className="flex items-center justify-center gap-3">
                   <FileText className="w-8 h-8 text-success" />
-                  <div className="text-left">
+                  <div className="text-left rtl:text-right">
                     <p className="font-medium text-text">{cvFile.name}</p>
                     <p className="text-sm text-text-muted">{(cvFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setCvFile(null); }}
-                    className="ml-4 p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-danger transition-colors"
+                    className="ml-4 rtl:mr-4 rtl:ml-0 p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-danger transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -170,8 +205,8 @@ export default function Analyze() {
               ) : (
                 <>
                   <Upload className="w-10 h-10 text-text-dim mx-auto mb-3" />
-                  <p className="text-text-muted mb-1">Drag & drop your CV here</p>
-                  <p className="text-sm text-text-dim">or click to browse files</p>
+                  <p className="text-text-muted mb-1">{t('dragDropCv')}</p>
+                  <p className="text-sm text-text-dim">{t('clickToBrowse')}</p>
                 </>
               )}
             </div>
@@ -185,14 +220,14 @@ export default function Analyze() {
                   <Wrench className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text">Skills</h2>
-                  <p className="text-sm text-text-muted">Your technical & soft skills</p>
+                  <h2 className="text-lg font-bold text-text">{t('skillsTitle')}</h2>
+                  <p className="text-sm text-text-muted">{t('skillsSub')}</p>
                 </div>
               </div>
               <textarea
                 value={skills}
                 onChange={(e) => setSkills(e.target.value)}
-                placeholder="e.g. React, Node.js, Python, Team leadership, Agile..."
+                placeholder={t('skillsPlaceholder')}
                 className="w-full h-32 bg-surface-elevated border border-border rounded-xl p-4 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
               />
             </div>
@@ -203,14 +238,14 @@ export default function Analyze() {
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text">Education</h2>
-                  <p className="text-sm text-text-muted">Your degrees & certifications</p>
+                  <h2 className="text-lg font-bold text-text">{t('educationTitle')}</h2>
+                  <p className="text-sm text-text-muted">{t('educationSub')}</p>
                 </div>
               </div>
               <textarea
                 value={diplomas}
                 onChange={(e) => setDiplomas(e.target.value)}
-                placeholder="e.g. BSc Computer Science, AWS Certified, Google Analytics..."
+                placeholder={t('educationPlaceholder')}
                 className="w-full h-32 bg-surface-elevated border border-border rounded-xl p-4 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
               />
             </div>
@@ -224,8 +259,8 @@ export default function Analyze() {
                   <Briefcase className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text">Job Offer</h2>
-                  <p className="text-sm text-text-muted">Provide the job details for comparison</p>
+                  <h2 className="text-lg font-bold text-text">{t('jobOfferTitle')}</h2>
+                  <p className="text-sm text-text-muted">{t('jobOfferSub')}</p>
                 </div>
               </div>
 
@@ -241,7 +276,7 @@ export default function Analyze() {
                   }`}
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  Upload PDF
+                  {t('uploadPdfMode')}
                 </button>
                 <button
                   type="button"
@@ -253,7 +288,7 @@ export default function Analyze() {
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  Paste Text
+                  {t('pasteTextMode')}
                 </button>
               </div>
             </div>
@@ -263,7 +298,7 @@ export default function Analyze() {
               <textarea
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
-                placeholder="Paste the complete job description here... Include requirements, responsibilities, qualifications, etc."
+                placeholder={t('jobDescriptionPlaceholder')}
                 className="w-full h-48 bg-surface-elevated border border-border rounded-xl p-4 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
               />
             ) : (
@@ -285,14 +320,14 @@ export default function Analyze() {
                 {jobPdfFile ? (
                   <div className="flex items-center justify-center gap-3">
                     <FileSpreadsheet className="w-8 h-8 text-secondary-light" />
-                    <div className="text-left">
+                    <div className="text-left rtl:text-right">
                       <p className="font-medium text-text">{jobPdfFile.name}</p>
                       <p className="text-sm text-text-muted">{(jobPdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setJobPdfFile(null); }}
-                      className="ml-4 p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-danger transition-colors"
+                      className="ml-4 rtl:mr-4 rtl:ml-0 p-1 rounded-lg hover:bg-surface-elevated text-text-muted hover:text-danger transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -300,8 +335,8 @@ export default function Analyze() {
                 ) : (
                   <>
                     <Upload className="w-10 h-10 text-text-dim mx-auto mb-3" />
-                    <p className="text-text-muted mb-1">Drag & drop the Job Offer PDF here</p>
-                    <p className="text-sm text-text-dim">or click to browse files</p>
+                    <p className="text-text-muted mb-1">{t('dragDropJobPdf')}</p>
+                    <p className="text-sm text-text-dim">{t('clickToBrowse')}</p>
                   </>
                 )}
               </div>
@@ -312,8 +347,8 @@ export default function Analyze() {
           <div className="flex justify-center animate-fade-in-up stagger-5">
             <button type="submit" className="btn-primary text-lg px-10 py-4 flex items-center gap-3 group">
               <Sparkles className="w-5 h-5 relative z-10" />
-              <span>Analyze with AI</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
+              <span>{t('analyzeWithAi')}</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform relative z-10" />
             </button>
           </div>
         </form>

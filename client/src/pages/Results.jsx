@@ -6,10 +6,12 @@ import {
   Compass, CheckSquare, Square, Clock, Sparkles, BookOpen
 } from 'lucide-react';
 import { getAnalysis } from '../services/api';
+import { useLanguage } from '../LanguageContext';
 import ScoreCircle from '../components/ScoreCircle';
 
 export default function Results() {
   const { id } = useParams();
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -50,21 +52,21 @@ export default function Results() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <XCircle className="w-12 h-12 text-danger mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-text mb-2">Error</h2>
+          <h2 className="text-xl font-bold text-text mb-2">{t('errorTitle')}</h2>
           <p className="text-text-muted mb-6">{error || 'Analysis not found'}</p>
-          <Link to="/analyze" className="btn-primary"><span>Try Again</span></Link>
+          <Link to="/analyze" className="btn-primary"><span>{t('tryAgain')}</span></Link>
         </div>
       </div>
     );
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: Target },
-    { id: 'roadmap', label: 'Feuille de Route AI', icon: Compass },
-    { id: 'skills', label: 'Missing Skills', icon: AlertTriangle },
-    { id: 'weaknesses', label: 'Weaknesses', icon: XCircle },
-    { id: 'recommendations', label: 'Tips', icon: Lightbulb },
-    { id: 'questions', label: 'Interview Q&A', icon: HelpCircle },
+    { id: 'overview', label: t('tabOverview'), icon: Target },
+    { id: 'roadmap', label: t('tabRoadmap'), icon: Compass },
+    { id: 'skills', label: t('tabSkills'), icon: AlertTriangle },
+    { id: 'weaknesses', label: t('tabWeaknesses'), icon: XCircle },
+    { id: 'recommendations', label: t('tabRecommendations'), icon: Lightbulb },
+    { id: 'questions', label: t('tabQuestions'), icon: HelpCircle },
   ];
 
   const roadmapList = data.learningRoadmap && data.learningRoadmap.length > 0
@@ -75,8 +77,8 @@ export default function Results() {
         duration: '1-2 semaines',
         priority: idx === 0 ? 'High' : 'Medium',
         technologies: [skill],
-        description: `Acquérir et consolider les compétences pratiques en ${skill} pour combler l'écart avec l'offre.`,
-        actionItem: `Réaliser un mini-projet pratique intégrant ${skill}.`
+        description: `Acquérir et consolider les compétences pratiques en ${skill}.`,
+        actionItem: `Réaliser un projet pratique intégrant ${skill}.`
       }));
 
   const completedCount = Object.values(completedPhases).filter(Boolean).length;
@@ -87,15 +89,15 @@ export default function Results() {
       <div className="max-w-6xl mx-auto">
         {/* Back button */}
         <Link to="/analyze" className="inline-flex items-center gap-2 text-text-muted hover:text-text mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">New Analysis</span>
+          <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+          <span className="text-sm">{t('backToNewAnalysis')}</span>
         </Link>
 
         {/* Header with Score */}
         <div className="glass rounded-2xl p-8 mb-6 animate-fade-in-up">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <ScoreCircle score={data.compatibilityScore} />
-            <div className="flex-1 text-center md:text-left">
+            <div className="flex-1 text-center md:text-left rtl:md:text-right">
               <h1 className="text-2xl sm:text-3xl font-bold text-text mb-2">
                 {data.jobTitle || 'Job Analysis'}
               </h1>
@@ -105,14 +107,14 @@ export default function Results() {
               <p className="text-text-muted text-sm leading-relaxed max-w-xl">
                 {data.summary || `Your profile has a ${data.compatibilityScore}% compatibility with this position.`}
               </p>
-              <div className="flex flex-wrap gap-3 mt-6 justify-center md:justify-start">
+              <div className="flex flex-wrap gap-3 mt-6 justify-center md:justify-start rtl:md:justify-start">
                 <Link to={`/cover-letter/${id}`} className="btn-primary text-sm flex items-center gap-2">
                   <FileText className="w-4 h-4 relative z-10" />
-                  <span>Generate Cover Letter</span>
+                  <span>{t('generateCoverLetterBtn')}</span>
                 </Link>
                 <Link to={`/interview/${id}`} className="btn-secondary text-sm flex items-center gap-2">
                   <MessageSquare className="w-4 h-4" />
-                  <span>Mock Interview</span>
+                  <span>{t('mockInterviewBtn')}</span>
                 </Link>
               </div>
             </div>
