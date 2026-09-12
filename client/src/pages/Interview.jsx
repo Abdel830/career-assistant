@@ -13,6 +13,8 @@ export default function Interview() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const wantListeningRef = useRef(false);
+  const restartCountRef = useRef(0);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -91,6 +93,78 @@ export default function Interview() {
     }
   };
 
+  const startRecognitionSession = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    // Use ar-SA for Arabic on desktop browsers for universal Google Speech API support
+    const langMap = { fr: 'fr-FR', ar: 'ar-SA', en: 'en-US' };
+    recognition.lang = langMap[language] || 'fr-FR';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setError('');
+      restartCountRef.current = 0; // Reset restart counter on successful start
+    };
+
+    recognition.onresult = (event) => {
+      restartCountRef.current = 0; // Reset on successful result
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      if (transcript) {
+        setInput(prev => {
+          const base = prev.trim();
+          return base ? `${base} ${transcript}` : transcript;
+        });
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.warn('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+        setError(t('micPermissionDenied'));
+        wantListeningRef.current = false;
+      } else if (event.error === 'audio-capture') {
+        setError(t('noMicFound'));
+        wantListeningRef.current = false;
+      } else if (event.error === 'network') {
+        setError(t('speechNotSupported'));
+        wantListeningRef.current = false;
+      }
+      // Don't set isListening=false here, let onend handle it
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if user still wants to listen (handles Brave/Chrome premature stops)
+      if (wantListeningRef.current) {
+        restartCountRef.current += 1;
+        if (restartCountRef.current < 50) {
+          try {
+            setTimeout(() => {
+              if (wantListeningRef.current) {
+                startRecognitionSession();
+              } else {
+                setIsListening(false);
+              }
+            }, 200);
+            return;
+          } catch {
+            // Fall through to stop
+          }
+        }
+      }
+      wantListeningRef.current = false;
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
+
   const toggleListening = async () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -98,13 +172,15 @@ export default function Interview() {
       return;
     }
 
-    if (isListening) {
+    // User wants to STOP listening
+    if (isListening || wantListeningRef.current) {
+      wantListeningRef.current = false;
       recognitionRef.current?.stop();
       setIsListening(false);
       return;
     }
 
-    // Explicitly request microphone permission first for Desktop Chrome/Edge compatibility
+    // Explicitly request microphone permission first for Desktop Chrome/Edge/Brave compatibility
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -119,51 +195,14 @@ export default function Interview() {
       return;
     }
 
+    // User wants to START listening
     try {
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      // Use ar-SA for Arabic on desktop browsers for universal Google Speech API support
-      const langMap = { fr: 'fr-FR', ar: 'ar-SA', en: 'en-US' };
-      recognition.lang = langMap[language] || 'fr-FR';
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setError('');
-      };
-
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        if (transcript) {
-          setInput(prev => {
-            const base = prev.trim();
-            return base ? `${base} ${transcript}` : transcript;
-          });
-        }
-      };
-
-      recognition.onerror = (event) => {
-        console.warn('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-          setError(t('micPermissionDenied'));
-        } else if (event.error === 'audio-capture') {
-          setError(t('noMicFound'));
-        }
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
+      wantListeningRef.current = true;
+      restartCountRef.current = 0;
+      startRecognitionSession();
     } catch (err) {
       console.error('Failed to start speech recognition:', err);
+      wantListeningRef.current = false;
       setIsListening(false);
     }
   };
