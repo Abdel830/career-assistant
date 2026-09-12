@@ -91,7 +91,7 @@ export default function Interview() {
     }
   };
 
-  const toggleListening = () => {
+  const toggleListening = async () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setError(t('speechNotSupported'));
@@ -104,13 +104,29 @@ export default function Interview() {
       return;
     }
 
+    // Explicitly request microphone permission first for Desktop Chrome/Edge compatibility
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+    } catch (permErr) {
+      console.warn('Microphone permission denied or audio device missing:', permErr);
+      if (permErr.name === 'NotFoundError' || permErr.name === 'DevicesNotFoundError') {
+        setError(t('noMicFound'));
+      } else {
+        setError(t('micPermissionDenied'));
+      }
+      return;
+    }
+
     try {
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
       recognition.continuous = true;
       recognition.interimResults = true;
 
-      const langMap = { fr: 'fr-FR', ar: 'ar-MA', en: 'en-US' };
+      // Use ar-SA for Arabic on desktop browsers for universal Google Speech API support
+      const langMap = { fr: 'fr-FR', ar: 'ar-SA', en: 'en-US' };
       recognition.lang = langMap[language] || 'fr-FR';
 
       recognition.onstart = () => {
@@ -133,9 +149,12 @@ export default function Interview() {
 
       recognition.onerror = (event) => {
         console.warn('Speech recognition error:', event.error);
-        if (event.error !== 'no-speech') {
-          setIsListening(false);
+        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+          setError(t('micPermissionDenied'));
+        } else if (event.error === 'audio-capture') {
+          setError(t('noMicFound'));
         }
+        setIsListening(false);
       };
 
       recognition.onend = () => {

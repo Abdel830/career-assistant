@@ -121,6 +121,8 @@ const translations = {
     voiceInput: 'Saisie vocale',
     listening: 'Écoute en cours...',
     speechNotSupported: 'La reconnaissance vocale n\'est pas supportée par votre navigateur (essayez Chrome ou Edge).',
+    micPermissionDenied: 'Accès au microphone refusé. Cliquez sur l\'icône de cadenas dans la barre d\'adresse pour autoriser le micro.',
+    noMicFound: 'Aucun microphone actif détecté sur votre ordinateur.',
 
     // Dashboard Page
     dashboardTitle: 'Tableau de Bord',
@@ -248,6 +250,8 @@ const translations = {
     voiceInput: 'إدخال صوتي',
     listening: 'جاري الاستماع...',
     speechNotSupported: 'التعرف على الصوت غير مدعوم في متصفحك (جرب Chrome أو Edge).',
+    micPermissionDenied: 'تم رفض إذن المايكروفون. انقر على أيقونة القفل في شريط العنوان للسماح بالمايكروفون.',
+    noMicFound: 'لم يتم العثور على مايكروفون متصل بالكمبيوتر.',
 
     // Dashboard Page
     dashboardTitle: 'لوحة التحكم',
@@ -375,6 +379,8 @@ const translations = {
     voiceInput: 'Voice input',
     listening: 'Listening...',
     speechNotSupported: 'Speech recognition is not supported in your browser (try Chrome or Edge).',
+    micPermissionDenied: 'Microphone access denied. Click the lock icon in your browser address bar to allow microphone access.',
+    noMicFound: 'No active microphone detected on your computer.',
 
     // Dashboard Page
     dashboardTitle: 'Dashboard',
