@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import ScrollToTop from './components/ScrollToTop'
 import Home from './pages/Home'
 import Analyze from './pages/Analyze'
 import Results from './pages/Results'
@@ -10,6 +11,7 @@ import Dashboard from './pages/Dashboard'
 function App() {
   return (
     <div className="min-h-screen bg-surface">
+      <ScrollToTop />
       <Navbar />
       <main>
         <Routes>
