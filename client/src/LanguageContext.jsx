@@ -118,6 +118,9 @@ const translations = {
     worthConsidering: '🤔 À Considérer',
     needsImprovement: '⚠️ Améliorations Nécessaires',
     areasToImprove: 'Axes d\'Amélioration',
+    voiceInput: 'Saisie vocale',
+    listening: 'Écoute en cours...',
+    speechNotSupported: 'La reconnaissance vocale n\'est pas supportée par votre navigateur (essayez Chrome ou Edge).',
 
     // Dashboard Page
     dashboardTitle: 'Tableau de Bord',
@@ -242,6 +245,9 @@ const translations = {
     worthConsidering: '🤔 يستحق النظر',
     needsImprovement: '⚠️ يحتاج إلى تحسين',
     areasToImprove: 'مجالات التحسين',
+    voiceInput: 'إدخال صوتي',
+    listening: 'جاري الاستماع...',
+    speechNotSupported: 'التعرف على الصوت غير مدعوم في متصفحك (جرب Chrome أو Edge).',
 
     // Dashboard Page
     dashboardTitle: 'لوحة التحكم',
@@ -366,6 +372,9 @@ const translations = {
     worthConsidering: '🤔 Worth Considering',
     needsImprovement: '⚠️ Needs Improvement',
     areasToImprove: 'Areas to Improve',
+    voiceInput: 'Voice input',
+    listening: 'Listening...',
+    speechNotSupported: 'Speech recognition is not supported in your browser (try Chrome or Edge).',
 
     // Dashboard Page
     dashboardTitle: 'Dashboard',

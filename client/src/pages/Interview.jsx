@@ -2,21 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   MessageSquare, Send, ArrowLeft, Loader2, User, Bot,
-  Trophy, Target, TrendingUp, AlertTriangle, CheckCircle
+  Trophy, Target, TrendingUp, AlertTriangle, CheckCircle, Mic, MicOff
 } from 'lucide-react';
 import { getAnalysis, startInterview, sendInterviewMessage } from '../services/api';
 import { useLanguage } from '../LanguageContext';
 
 export default function Interview() {
   const { id: analysisId } = useParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [interviewId, setInterviewId] = useState(null);
   const [progress, setProgress] = useState({ current: 0, total: 8 });
   const [isComplete, setIsComplete] = useState(false);
@@ -50,6 +52,11 @@ export default function Interview() {
   const handleSend = async () => {
     if (!input.trim() || sending || isComplete) return;
 
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    }
+
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'candidate', content: userMessage }]);
@@ -81,6 +88,64 @@ export default function Interview() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const toggleListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError(t('speechNotSupported'));
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      const langMap = { fr: 'fr-FR', ar: 'ar-MA', en: 'en-US' };
+      recognition.lang = langMap[language] || 'fr-FR';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setError('');
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setInput(prev => {
+            const base = prev.trim();
+            return base ? `${base} ${transcript}` : transcript;
+          });
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error !== 'no-speech') {
+          setIsListening(false);
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+      setIsListening(false);
     }
   };
 
@@ -279,31 +344,60 @@ export default function Interview() {
       {/* Input Area */}
       {!isComplete && (
         <div className="glass-strong border-t border-border px-4 py-4">
-          <div className="max-w-4xl mx-auto flex items-end gap-3">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t('typeAnswerPlaceholder')}
-              rows={1}
-              className="flex-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all max-h-32"
-              style={{ minHeight: '48px' }}
-              disabled={sending}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || sending}
-              className="btn-primary p-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {sending ? (
-                <Loader2 className="w-5 h-5 animate-spin relative z-10" />
-              ) : (
-                <Send className="w-5 h-5 relative z-10 rtl:rotate-180" />
-              )}
-            </button>
+          <div className="max-w-4xl mx-auto flex flex-col gap-2">
+            {isListening && (
+              <div className="flex items-center gap-2 text-xs text-danger animate-pulse font-medium px-1">
+                <span className="w-2 h-2 rounded-full bg-danger animate-ping" />
+                <span>{t('listening')}</span>
+              </div>
+            )}
+            <div className="flex items-end gap-2.5">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t('typeAnswerPlaceholder')}
+                rows={1}
+                className="flex-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-text placeholder-text-dim resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all max-h-32"
+                style={{ minHeight: '48px' }}
+                disabled={sending}
+              />
+
+              {/* Speech Recognition Button */}
+              <button
+                type="button"
+                onClick={toggleListening}
+                disabled={sending}
+                title={t('voiceInput')}
+                className={`p-3 rounded-xl border transition-all ${
+                  isListening
+                    ? 'bg-danger/20 border-danger text-danger animate-pulse shadow-lg shadow-danger/20'
+                    : 'bg-surface-elevated border-border text-text-muted hover:text-text hover:border-primary/50'
+                }`}
+              >
+                {isListening ? (
+                  <MicOff className="w-5 h-5" />
+                ) : (
+                  <Mic className="w-5 h-5" />
+                )}
+              </button>
+
+              {/* Send Button */}
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || sending}
+                className="btn-primary p-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {sending ? (
+                  <Loader2 className="w-5 h-5 animate-spin relative z-10" />
+                ) : (
+                  <Send className="w-5 h-5 relative z-10 rtl:rotate-180" />
+                )}
+              </button>
+            </div>
           </div>
-          <p className="text-center text-xs text-text-dim mt-2">Press Enter to send • Shift+Enter for new line</p>
+          <p className="text-center text-xs text-text-dim mt-2">Press Enter to send • Shift+Enter for new line • Click Mic for Voice</p>
         </div>
       )}
 
