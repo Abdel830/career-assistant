@@ -15,6 +15,9 @@ export default function Interview() {
   const recognitionRef = useRef(null);
   const wantListeningRef = useRef(false);
   const restartCountRef = useRef(0);
+  const baseTextRef = useRef('');
+  const sessionFinalTextRef = useRef('');
+  const latestSessionTranscriptRef = useRef('');
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -99,6 +102,7 @@ export default function Interview() {
     recognitionRef.current = recognition;
     recognition.continuous = true;
     recognition.interimResults = true;
+    latestSessionTranscriptRef.current = '';
 
     // Use ar-SA for Arabic on desktop browsers for universal Google Speech API support
     const langMap = { fr: 'fr-FR', ar: 'ar-SA', en: 'en-US' };
@@ -112,16 +116,18 @@ export default function Interview() {
 
     recognition.onresult = (event) => {
       restartCountRef.current = 0; // Reset on successful result
-      let transcript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+      let currentSessionText = '';
+      for (let i = 0; i < event.results.length; i++) {
+        currentSessionText += event.results[i][0].transcript;
       }
-      if (transcript) {
-        setInput(prev => {
-          const base = prev.trim();
-          return base ? `${base} ${transcript}` : transcript;
-        });
-      }
+      latestSessionTranscriptRef.current = currentSessionText;
+
+      const base = baseTextRef.current.trim();
+      const prevSessions = sessionFinalTextRef.current.trim();
+      const prefix = [base, prevSessions].filter(Boolean).join(' ');
+
+      const newTotal = prefix ? `${prefix} ${currentSessionText.trimStart()}` : currentSessionText;
+      setInput(newTotal);
     };
 
     recognition.onerror = (event) => {
@@ -144,6 +150,10 @@ export default function Interview() {
       if (wantListeningRef.current) {
         restartCountRef.current += 1;
         if (restartCountRef.current < 50) {
+          if (latestSessionTranscriptRef.current) {
+            sessionFinalTextRef.current = [sessionFinalTextRef.current, latestSessionTranscriptRef.current].filter(Boolean).join(' ');
+            latestSessionTranscriptRef.current = '';
+          }
           try {
             setTimeout(() => {
               if (wantListeningRef.current) {
@@ -197,6 +207,9 @@ export default function Interview() {
 
     // User wants to START listening
     try {
+      baseTextRef.current = input;
+      sessionFinalTextRef.current = '';
+      latestSessionTranscriptRef.current = '';
       wantListeningRef.current = true;
       restartCountRef.current = 0;
       startRecognitionSession();
