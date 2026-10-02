@@ -4,7 +4,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance = null;
+function getAI() {
+  if (!aiInstance) {
+    aiInstance = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return aiInstance;
+}
 
 /**
  * Helper to safely extract and parse JSON from AI response
@@ -30,26 +36,57 @@ function safeParseJSON(rawText) {
   }
 }
 
-/**
- * Helper to call Gemini AI with automatic retry on 503 / 429 / transient high-demand errors
- */
-async function generateContentWithRetry(options, retries = 3, delayMs = 1500) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      return await ai.models.generateContent(options);
-    } catch (error) {
-      const isTransient = error?.status === 503 || error?.status === 429 || error?.code === 503 || error?.code === 429 ||
-        (error?.message && (error.message.includes('503') || error.message.includes('high demand') || error.message.includes('UNAVAILABLE') || error.message.includes('Quota')));
+const CANDIDATE_MODELS = [
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.8-flash',
+];
 
-      if (isTransient && attempt < retries) {
-        console.warn(`⚠️ Gemini API High Demand/503 (Attempt ${attempt}/${retries}). Retrying in ${delayMs}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-        delayMs *= 2; // Exponential backoff: 1.5s -> 3s -> 6s
-      } else {
-        throw error;
+/**
+ * Helper to call Gemini AI with automatic retries AND automatic fallback to secondary models if a model suffers high demand / 503 / 429
+ */
+async function generateContentWithRetry(options, retriesPerModel = 2) {
+  const initialModel = options.model;
+  const modelsToTry = initialModel
+    ? [initialModel, ...CANDIDATE_MODELS.filter(m => m !== initialModel)]
+    : CANDIDATE_MODELS;
+
+  let lastError = null;
+
+  for (const modelName of modelsToTry) {
+    let delayMs = 1000;
+    for (let attempt = 1; attempt <= retriesPerModel; attempt++) {
+      try {
+        const reqOptions = { ...options, model: modelName };
+        const response = await getAI().models.generateContent(reqOptions);
+        return response;
+      } catch (error) {
+        lastError = error;
+        const isTransient = error?.status === 503 || error?.status === 429 || error?.code === 503 || error?.code === 429 ||
+          (error?.message && (
+            error.message.includes('503') ||
+            error.message.includes('high demand') ||
+            error.message.includes('UNAVAILABLE') ||
+            error.message.includes('Quota') ||
+            error.message.includes('RESOURCE_EXHAUSTED')
+          ));
+
+        if (isTransient) {
+          console.warn(`⚠️ Model '${modelName}' high demand/rate limit (Attempt ${attempt}/${retriesPerModel}). ${attempt < retriesPerModel ? `Retrying in ${delayMs}ms...` : 'Switching to fallback model...'}`);
+          if (attempt < retriesPerModel) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            delayMs *= 2;
+          }
+        } else {
+          console.warn(`⚠️ Model '${modelName}' error: ${error?.message || error}. Switching to fallback model...`);
+          break; // Try next model immediately
+        }
       }
     }
   }
+
+  throw lastError || new Error('Les serveurs IA sont temporairement surchargés. Veuillez réessayer dans quelques secondes.');
 }
 
 /**
